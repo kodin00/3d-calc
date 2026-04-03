@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
+    "dev": "concurrently \"vite\" \"PORT=3001 tsx watch server/index.ts\"",
     "build": "vite build",
     "preview": "vite preview",
     "start": "NODE_ENV=production tsx server/index.ts",
