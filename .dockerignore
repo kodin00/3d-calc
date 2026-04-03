@@ -1,0 +1,39 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+.next
+out
+dist
+
+# Development
+.vscode
+.idea
+
+# Logs
+*.log
+server.log
+vite.log
+
+# Playwright
+.playwright-mcp/
+
+# SQLite temp files
+*.db-shm
+*.db-wal
+
+# Test files
+/coverage
+
+# Misc
+.DS_Store
+*.pem
+*.tsbuildinfo

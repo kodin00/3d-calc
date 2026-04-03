@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs
+*.log
+server.log
+vite.log
+
+# playwright
+.playwright-mcp/
+
+# sqlite temp files
+*.db-shm
+*.db-wal
+
+# misc
+1

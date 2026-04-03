@@ -6,6 +6,7 @@
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "NODE_ENV=production tsx server/index.ts",
     "lint": "eslint"
   },
   "dependencies": {
