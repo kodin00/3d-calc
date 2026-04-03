@@ -39,12 +39,18 @@ sqlite.exec(`
     name TEXT NOT NULL,
     description TEXT,
     filament_id TEXT REFERENCES filaments(id),
+    price_per_gram REAL,
     grams_used REAL NOT NULL,
     print_hours REAL NOT NULL,
+    electricity_rate_kwh REAL,
+    printer_watts REAL,
+    machine_hourly_rate REAL,
+    waste_factor_percent REAL,
     selling_price REAL NOT NULL,
     overhead_cost REAL DEFAULT 0,
     total_cost REAL,
     margin_percent REAL,
+    print_count INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -72,6 +78,38 @@ try {
 // Migration: Add print_count column if it doesn't exist
 try {
   sqlite.exec(`ALTER TABLE products ADD COLUMN print_count INTEGER DEFAULT 0`);
+} catch {
+  // Column already exists, ignore
+}
+
+// Migration: Add price_per_gram column if it doesn't exist
+try {
+  sqlite.exec(`ALTER TABLE products ADD COLUMN price_per_gram REAL`);
+} catch {
+  // Column already exists, ignore
+}
+
+// Migration: Add calculator settings columns if they don't exist
+try {
+  sqlite.exec(`ALTER TABLE products ADD COLUMN electricity_rate_kwh REAL`);
+} catch {
+  // Column already exists, ignore
+}
+
+try {
+  sqlite.exec(`ALTER TABLE products ADD COLUMN printer_watts REAL`);
+} catch {
+  // Column already exists, ignore
+}
+
+try {
+  sqlite.exec(`ALTER TABLE products ADD COLUMN machine_hourly_rate REAL`);
+} catch {
+  // Column already exists, ignore
+}
+
+try {
+  sqlite.exec(`ALTER TABLE products ADD COLUMN waste_factor_percent REAL`);
 } catch {
   // Column already exists, ignore
 }
