@@ -40,7 +40,7 @@ export function ResultsPanel() {
   const isGoodMargin = actualMarginPercent >= 30;
   const isPositive = actualMarginPercent > 0;
 
-  const MarginIcon = actualMarginPercent > 30 ? TrendingUp : actualMarginPercent > 0 ? Minus : TrendingDown;
+  const MarginIcon = actualMarginPercent >= 30 ? TrendingUp : actualMarginPercent > 0 ? Minus : TrendingDown;
 
   return (
     <div className="space-y-3">

@@ -46,8 +46,13 @@ export interface ProductRecord {
   name: string;
   description: string | null;
   filamentId: string | null;
+  pricePerGram: number | null;
   gramsUsed: number;
   printHours: number;
+  electricityRateKwh: number | null;
+  printerWatts: number | null;
+  machineHourlyRate: number | null;
+  wasteFactorPercent: number | null;
   sellingPrice: number;
   overheadCost: number | null;
   totalCost: number | null;

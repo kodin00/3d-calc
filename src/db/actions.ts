@@ -87,15 +87,25 @@ export async function getProductsWithFilament(): Promise<ProductWithFilament[]> 
 
 async function calculateProductFields(
   filamentId: string | null,
+  pricePerGram: number | null,
   gramsUsed: number,
   printHours: number,
   overheadCost: number,
-  sellingPrice: number
+  sellingPrice: number,
+  electricityRateKwh: number | null,
+  printerWatts: number | null,
+  machineHourlyRate: number | null,
+  wasteFactorPercent: number | null
 ): Promise<{ totalCost: number; marginPercent: number }> {
-  // Get electricity rate from settings
-  const electricityRateStr = await getSetting('electricityRateKwh');
-  const parsed = electricityRateStr ? parseFloat(electricityRateStr) : NaN;
-  const electricityRateKwh = !isNaN(parsed) && parsed > 0 ? parsed : DEFAULTS.electricityRateKwh;
+  // Get electricity rate from settings if not provided
+  let electricityRate = electricityRateKwh ?? DEFAULTS.electricityRateKwh;
+  if (!electricityRateKwh) {
+    const rateStr = await getSetting('electricityRateKwh');
+    const parsed = rateStr ? parseFloat(rateStr) : NaN;
+    if (!isNaN(parsed) && parsed > 0) {
+      electricityRate = parsed;
+    }
+  }
 
   // Get filament cost if linked
   let filamentCostPerKg: number | null = null;
@@ -106,9 +116,13 @@ async function calculateProductFields(
 
   const result = calculateProductCost({
     filamentCostPerKg,
+    pricePerGram,
     gramsUsed,
     printHours,
-    electricityRateKwh,
+    electricityRateKwh: electricityRate,
+    printerWatts: printerWatts ?? DEFAULTS.printerWatts,
+    machineHourlyRate: machineHourlyRate ?? DEFAULTS.machineHourlyRate,
+    wasteFactorPercent: wasteFactorPercent ?? DEFAULTS.wasteFactorPercent,
     overheadCost,
     sellingPrice,
   });
@@ -125,17 +139,25 @@ export async function addProduct(data: Omit<typeof products.$inferInsert, 'id' |
 
   const overhead = data.overheadCost ?? 0;
   const filamentId = data.filamentId ?? null;
+  const pricePerGram = data.pricePerGram ?? null;
+
   const { totalCost, marginPercent } = await calculateProductFields(
     filamentId,
+    pricePerGram,
     data.gramsUsed,
     data.printHours,
     overhead,
-    data.sellingPrice
+    data.sellingPrice,
+    data.electricityRateKwh ?? null,
+    data.printerWatts ?? null,
+    data.machineHourlyRate ?? null,
+    data.wasteFactorPercent ?? null
   );
 
   await db.insert(products).values({
     ...data,
     filamentId,
+    pricePerGram,
     overheadCost: overhead,
     id,
     totalCost,
@@ -152,17 +174,27 @@ export async function updateProduct(id: string, data: Partial<typeof products.$i
   if (!existing) throw new Error('Product not found');
 
   const filamentId = data.filamentId ?? existing.filamentId;
+  const pricePerGram = data.pricePerGram ?? existing.pricePerGram;
   const gramsUsed = data.gramsUsed ?? existing.gramsUsed;
   const printHours = data.printHours ?? existing.printHours;
   const overhead = data.overheadCost ?? existing.overheadCost ?? 0;
   const sellingPrice = data.sellingPrice ?? existing.sellingPrice;
+  const electricityRateKwh = data.electricityRateKwh ?? existing.electricityRateKwh;
+  const printerWatts = data.printerWatts ?? existing.printerWatts;
+  const machineHourlyRate = data.machineHourlyRate ?? existing.machineHourlyRate;
+  const wasteFactorPercent = data.wasteFactorPercent ?? existing.wasteFactorPercent;
 
   const { totalCost, marginPercent } = await calculateProductFields(
     filamentId,
+    pricePerGram,
     gramsUsed,
     printHours,
     overhead,
-    sellingPrice
+    sellingPrice,
+    electricityRateKwh,
+    printerWatts,
+    machineHourlyRate,
+    wasteFactorPercent
   );
 
   await db.update(products).set({
@@ -176,6 +208,12 @@ export async function updateProduct(id: string, data: Partial<typeof products.$i
 
 export async function deleteProduct(id: string) {
   await db.delete(products).where(eq(products.id, id));
+}
+
+// ─── Clear all products ─────────────────────────────────────────────────────
+
+export async function clearAllProducts() {
+  await db.delete(products);
 }
 
 // ─── Print Product (deduct filament weight) ───────────────────────────────────

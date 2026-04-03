@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPresets, savePreset, deletePreset, getSetting, setSetting, getFilaments, addFilament, updateFilament, deleteFilament, getProductsWithFilament, addProduct, updateProduct, deleteProduct, printProduct } from '../src/db/actions.js';
+import { getPresets, savePreset, deletePreset, getSetting, setSetting, getFilaments, addFilament, updateFilament, deleteFilament, getProductsWithFilament, addProduct, updateProduct, deleteProduct, printProduct, clearAllProducts } from '../src/db/actions.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -38,7 +38,7 @@ app.delete('/api/filaments/:id', async (req, res) => {
 // Product routes
 app.get('/api/products', async (_req, res) => { res.json(await getProductsWithFilament()); });
 app.post('/api/products', async (req, res) => {
-  const { name, gramsUsed, printHours, sellingPrice } = req.body;
+  const { name, gramsUsed, printHours, sellingPrice, pricePerGram } = req.body;
   // Validate required fields
   if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Name is required' });
@@ -86,6 +86,17 @@ app.delete('/api/products/:id', async (req, res) => {
   } catch (err) {
     console.error('Failed to delete product:', err);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Clear all products
+app.delete('/api/products', async (_req, res) => {
+  try {
+    await clearAllProducts();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to clear products:', err);
+    res.status(500).json({ error: 'Failed to clear products' });
   }
 });
 

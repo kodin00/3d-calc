@@ -18,8 +18,13 @@ export const products = sqliteTable('products', {
   name: text('name').notNull(),
   description: text('description'),
   filamentId: text('filament_id').references(() => filaments.id),
+  pricePerGram: real('price_per_gram'), // Used when no filament is linked
   gramsUsed: real('grams_used').notNull(),
   printHours: real('print_hours').notNull(),
+  electricityRateKwh: real('electricity_rate_kwh'), // Store for accurate recalculation
+  printerWatts: real('printer_watts'),
+  machineHourlyRate: real('machine_hourly_rate'),
+  wasteFactorPercent: real('waste_factor_percent'),
   sellingPrice: real('selling_price').notNull(),
   overheadCost: real('overhead_cost').default(0),
   totalCost: real('total_cost'),

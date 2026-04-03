@@ -1,7 +1,7 @@
 'use client';
 
 import { Link, useLocation } from 'react-router-dom';
-import { Calculator, Package, Layers, Settings, Printer } from 'lucide-react';
+import { Calculator, Package, Settings, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -9,12 +9,6 @@ const navItems = [
     to: '/calculator',
     label: 'Calculator',
     icon: Calculator,
-    active: true,
-  },
-  {
-    to: '/filaments',
-    label: 'Filaments',
-    icon: Layers,
   },
   {
     to: '/products',
@@ -41,7 +35,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-2 space-y-0.5">
-        {navItems.map(({ to, label, icon: Icon, badge }) => {
+        {navItems.map(({ to, label, icon: Icon }) => {
           const isActive = pathname.startsWith(to);
           return (
             <Link
@@ -61,11 +55,6 @@ export function Sidebar() {
                 )}
               />
               <span className="flex-1">{label}</span>
-              {badge && (
-                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">
-                  {badge}
-                </span>
-              )}
             </Link>
           );
         })}

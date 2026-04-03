@@ -1,12 +1,11 @@
 'use client';
 
 import { Link, useLocation } from 'react-router-dom';
-import { Calculator, Layers, Package, Printer } from 'lucide-react';
+import { Calculator, Package, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/calculator', label: 'Calc', icon: Calculator },
-  { to: '/filaments', label: 'Filaments', icon: Layers },
   { to: '/products', label: 'Products', icon: Package },
 ];
 

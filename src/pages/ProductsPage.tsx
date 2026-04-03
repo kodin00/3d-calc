@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Package } from 'lucide-react';
+import { Plus, Package, Trash2 } from 'lucide-react';
 import { ProductList } from '@/components/products/ProductList';
 import { ProductFormDialog } from '@/components/products/ProductFormDialog';
 import { useConfirm } from '@/store/useConfirmStore';
@@ -147,6 +147,27 @@ export default function ProductsPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    const confirmed = await confirmDialog({
+      title: 'Clear All Products',
+      message: 'Are you sure you want to delete ALL products? This cannot be undone.',
+      confirmText: 'Clear All',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch('/api/products', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear products');
+      setProducts([]);
+      toast.success('All products cleared');
+    } catch {
+      toast.error('Failed to clear products. Please try again.');
+    }
+  };
+
   const handlePrint = async (product: ProductWithFilament) => {
     if (!product.filament) {
       toast.error('This product has no linked filament.');
@@ -184,11 +205,11 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-5xl mx-auto">
+    <div className="p-3 md:p-4 space-y-3 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center shrink-0">
             <Package className="w-5 h-5 text-amber-500" />
           </div>
           <div>
@@ -198,17 +219,28 @@ export default function ProductsPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-1.5 h-8 px-3 text-base bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          {products.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="flex items-center gap-1.5 h-9 md:h-8 px-3 text-sm bg-zinc-900 hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear All
+            </button>
+          )}
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-1.5 h-9 md:h-8 px-3 text-sm bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* List */}
-      <div className="rounded-2xl bg-zinc-900/30 border border-white/10 p-4">
+      <div className="rounded-2xl bg-zinc-900/30 border border-white/10 p-3 md:p-4">
         <ProductList
           products={products}
           onEdit={handleOpenEdit}

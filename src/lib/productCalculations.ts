@@ -2,6 +2,7 @@ import { DEFAULTS } from './constants';
 
 export interface ProductCalcParams {
   filamentCostPerKg: number | null;
+  pricePerGram: number | null;
   gramsUsed: number;
   printHours: number;
   electricityRateKwh: number;
@@ -26,6 +27,7 @@ export interface ProductCalcResult {
 export function calculateProductCost(params: ProductCalcParams): ProductCalcResult {
   const {
     filamentCostPerKg,
+    pricePerGram,
     gramsUsed,
     printHours,
     electricityRateKwh,
@@ -36,13 +38,28 @@ export function calculateProductCost(params: ProductCalcParams): ProductCalcResu
     sellingPrice,
   } = params;
 
-  const materialCost = filamentCostPerKg ? (filamentCostPerKg / 1000) * gramsUsed : 0;
+  // Calculate material cost using same formula as calculator
+  // Priority: filamentCostPerKg > pricePerGram > 0
+  let materialCost: number;
+  if (filamentCostPerKg) {
+    // Convert per-kg to per-gram and apply waste factor to grams
+    const costPerGram = filamentCostPerKg / 1000;
+    const effectiveGrams = gramsUsed * (1 + wasteFactorPercent / 100);
+    materialCost = costPerGram * effectiveGrams;
+  } else if (pricePerGram) {
+    // Use price per gram directly with waste factor applied to grams
+    const effectiveGrams = gramsUsed * (1 + wasteFactorPercent / 100);
+    materialCost = pricePerGram * effectiveGrams;
+  } else {
+    materialCost = 0;
+  }
+
   const electricityCost = (printerWatts / 1000) * printHours * electricityRateKwh;
   const machineCost = machineHourlyRate * printHours;
 
-  const subtotal = materialCost + electricityCost + machineCost;
-  const wasteCost = subtotal * (wasteFactorPercent / 100);
-  const totalCost = subtotal + wasteCost + overheadCost;
+  // Total cost is just material + electricity + machine + overhead
+  // Waste is already included in materialCost
+  const totalCost = materialCost + electricityCost + machineCost + overheadCost;
 
   const marginPercent = sellingPrice > 0
     ? ((sellingPrice - totalCost) / sellingPrice) * 100
@@ -53,7 +70,7 @@ export function calculateProductCost(params: ProductCalcParams): ProductCalcResu
     materialCost,
     electricityCost,
     machineCost,
-    wasteCost,
+    wasteCost: 0, // Waste is now included in materialCost
     overheadCost,
     totalCost,
     marginPercent,

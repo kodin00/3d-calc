@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useCalculatorStore } from '@/store/useCalculatorStore';
 import { calculate } from '@/lib/calculations';
 import { useToastStore } from '@/store/useToastStore';
+import { formatIDR } from '@/lib/format';
 import type { Preset } from '@/types';
 
 export default function CalculatorPage() {
@@ -25,14 +26,19 @@ export default function CalculatorPage() {
   const toast = useToastStore();
 
   const fetchData = useCallback(async () => {
-    const [presetsRes, rateRes] = await Promise.all([
-      fetch('/api/presets'),
-      fetch('/api/settings/electricityRateKwh'),
-    ]);
-    setPresets(await presetsRes.json());
-    const rateData = await rateRes.json();
-    setElectricityRate(rateData.value ?? null);
-  }, []);
+    try {
+      const [presetsRes, rateRes] = await Promise.all([
+        fetch('/api/presets'),
+        fetch('/api/settings/electricityRateKwh'),
+      ]);
+      if (!presetsRes.ok || !rateRes.ok) throw new Error('Failed to fetch data');
+      setPresets(await presetsRes.json());
+      const rateData = await rateRes.json();
+      setElectricityRate(rateData.value ?? null);
+    } catch {
+      toast.error('Failed to load calculator data');
+    }
+  }, [toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -48,10 +54,15 @@ export default function CalculatorPage() {
           name: productName.trim(),
           description: null,
           filamentId: null,
+          pricePerGram: inputs.pricePerGram,
           gramsUsed: inputs.gramsUsed,
           printHours: inputs.printHours,
-          overheadCost: 0,
+          electricityRateKwh: inputs.electricityRateKwh,
+          printerWatts: inputs.printerWatts,
+          machineHourlyRate: inputs.machineHourlyRate,
+          wasteFactorPercent: inputs.wasteFactorPercent,
           sellingPrice: inputs.sellingPrice,
+          overheadCost: 0,
         }),
       });
 
@@ -76,14 +87,15 @@ export default function CalculatorPage() {
           <p className="text-xs md:text-sm text-zinc-500">Calculate print costs &amp; pricing</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setAddProductOpen(true)}
-            className="flex items-center gap-1.5 h-9 md:h-8 px-3 text-sm bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors border border-white/10"
+            className="flex items-center gap-1.5 h-9 md:h-8 px-3 text-sm bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add new product?</span>
             <span className="sm:hidden">Add Product</span>
-          </button>
+          </Button>
           <ElectricityRateSetting defaultRate={electricityRate} onSaved={fetchData} />
         </div>
       </div>
@@ -135,16 +147,12 @@ export default function CalculatorPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-400">Selling price</span>
                 <span className="text-zinc-200">
-                  {inputs.sellingPrice > 0
-                    ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(inputs.sellingPrice)
-                    : '-'}
+                  {inputs.sellingPrice > 0 ? formatIDR(inputs.sellingPrice) : '-'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-400">Total cost</span>
-                <span className="text-amber-400">
-                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCost)}
-                </span>
+                <span className="text-amber-400">{formatIDR(totalCost)}</span>
               </div>
             </div>
 
