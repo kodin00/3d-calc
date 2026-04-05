@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useCalculatorStore } from '@/store/useCalculatorStore';
-import { calculate, getMultiplierPrices } from '@/lib/calculations';
+import { calculate, getMultiplierPrices, calculatePrintHours } from '@/lib/calculations';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatIDR } from '@/lib/format';
@@ -40,12 +40,15 @@ function Field({ label, unit, value, onChange, min = 0, step = 1 }: FieldProps) 
   );
 }
 
-function IDRField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function IDRField({ label, value, onChange, highlighted = false }: { label: string; value: number; onChange: (v: number) => void; highlighted?: boolean }) {
   const formatted = value > 0 ? new Intl.NumberFormat('id-ID').format(Math.round(value)) : '';
 
   return (
     <div className="space-y-1">
-      <Label className="text-sm font-medium text-zinc-500">{label}</Label>
+      <Label className={cn(
+        'text-sm font-medium',
+        highlighted ? 'text-amber-400' : 'text-zinc-500'
+      )}>{label}</Label>
       <div className="relative">
         <input
           type="text"
@@ -56,9 +59,12 @@ function IDRField({ label, value, onChange }: { label: string; value: number; on
             onChange(parseInt(digits, 10) || 0);
           }}
           className={cn(
-            'flex h-10 md:h-8 w-full rounded-md border bg-zinc-900 border-white/10 text-white text-base pr-10 px-3 py-1',
-            'placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1',
-            'focus-visible:ring-amber-500/30 focus-visible:border-amber-500/50 transition-colors'
+            'flex h-10 md:h-8 w-full rounded-md border text-white text-base pr-10 px-3 py-1',
+            'placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2',
+            'transition-colors',
+            highlighted
+              ? 'bg-amber-500/10 border-amber-500/50 focus-visible:ring-amber-500/50 focus-visible:border-amber-500'
+              : 'bg-zinc-900 border-white/10 focus-visible:ring-amber-500/30 focus-visible:border-amber-500/50'
           )}
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-500 pointer-events-none leading-none">
@@ -84,8 +90,35 @@ export function CalculatorForm({ onPriceSelect }: CalculatorFormProps) {
   const { totalCost } = useMemo(() => calculate(inputs), [inputs]);
   const multipliers = useMemo(() => getMultiplierPrices(totalCost), [totalCost]);
 
+  // Track the last auto-set selling price to know if user has manually changed it
+  const lastAutoSetPriceRef = useRef<number>(0);
+
+  // Auto-calculate print hours based on grams used (20g = 1 hour)
+  useEffect(() => {
+    const calculatedHours = calculatePrintHours(inputs.gramsUsed);
+    if (calculatedHours !== inputs.printHours) {
+      setInput('printHours', calculatedHours);
+    }
+  }, [inputs.gramsUsed, inputs.printHours, setInput]);
+
+  // Auto-set selling price to 3x if empty or if price matches previous auto-set value
+  useEffect(() => {
+    if (totalCost <= 0) return;
+
+    const new3xPrice = multipliers.x3;
+
+    // Set price if:
+    // - Selling price is 0 (empty), OR
+    // - Selling price equals the last auto-set price (user hasn't manually changed it)
+    if (inputs.sellingPrice === 0 || inputs.sellingPrice === lastAutoSetPriceRef.current) {
+      setInput('sellingPrice', new3xPrice);
+      lastAutoSetPriceRef.current = new3xPrice;
+    }
+  }, [totalCost, multipliers.x3, inputs.sellingPrice, setInput]);
+
   const handlePriceSelect = (price: number) => {
     setInput('sellingPrice', price);
+    lastAutoSetPriceRef.current = price;
     onPriceSelect?.(price);
   };
 
@@ -112,7 +145,15 @@ export function CalculatorForm({ onPriceSelect }: CalculatorFormProps) {
 
       <SectionLabel>Print</SectionLabel>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Print Time" unit="hr" value={inputs.printHours} onChange={(v) => setInput('printHours', v)} step={0.5} />
+        {/* Calculated Print Time - Display Only */}
+        <div className="space-y-1">
+          <Label className="text-sm font-medium text-zinc-500">Print Time</Label>
+          <div className="flex items-center gap-2 h-10 md:h-8 px-3 rounded-md bg-zinc-800/50 border border-white/10 text-white">
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-base md:text-sm">{inputs.printHours} hr</span>
+            <span className="text-xs text-zinc-500 ml-auto">~20g/hr</span>
+          </div>
+        </div>
         <Field label="Printer Power" unit="W" value={inputs.printerWatts} onChange={(v) => setInput('printerWatts', v)} step={10} />
       </div>
 
@@ -129,6 +170,7 @@ export function CalculatorForm({ onPriceSelect }: CalculatorFormProps) {
           label="Selling Price"
           value={inputs.sellingPrice}
           onChange={(v) => setInput('sellingPrice', v)}
+          highlighted
         />
 
         {/* Multiplier suggestions */}

@@ -62,25 +62,25 @@ export function ProductCard({ product, onEdit, onDelete, onPrint }: Props) {
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 text-sm pl-11 sm:pl-0">
+      <div className="grid grid-cols-3 gap-2 sm:gap-6 text-sm pl-11 sm:pl-0">
         {/* Material & Time */}
-        <div className="flex sm:block gap-2 sm:gap-0 sm:text-center">
+        <div className="text-center sm:text-center">
           <div className="text-zinc-400">{product.gramsUsed}g</div>
-          <div className="text-zinc-600 sm:text-xs">{product.printHours}h</div>
+          <div className="text-zinc-600 text-xs">{product.printHours}h</div>
         </div>
 
         {/* Cost */}
-        <div className="flex sm:block gap-2 sm:gap-0 sm:text-right">
-          <div className="text-zinc-400 sm:font-medium">
+        <div className="text-center sm:text-right">
+          <div className="text-zinc-400 sm:font-medium truncate">
             {product.totalCost !== null ? formatIDR(product.totalCost) : '—'}
           </div>
-          <div className="text-zinc-600 sm:text-xs">cost</div>
+          <div className="text-zinc-600 text-xs">cost</div>
         </div>
 
         {/* Price & Margin */}
-        <div className="flex sm:block gap-2 sm:gap-0 sm:text-right">
-          <div className="text-white font-medium">{formatIDR(product.sellingPrice)}</div>
-          <div className={getMarginColor(product.marginPercent)}>
+        <div className="text-center sm:text-right">
+          <div className="text-white font-medium truncate">{formatIDR(product.sellingPrice)}</div>
+          <div className={getMarginColor(product.marginPercent) + ' text-xs'}>
             {product.marginPercent !== null ? formatPercent(product.marginPercent) : '—'} margin
           </div>
         </div>

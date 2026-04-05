@@ -1,11 +1,16 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useCalculatorStore } from '@/store/useCalculatorStore';
 import { calculate } from '@/lib/calculations';
 import { formatIDR } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToastStore } from '@/store/useToastStore';
 
 interface CostRowProps {
   label: string;
@@ -35,6 +40,47 @@ function CostRow({ label, amount, total, color = 'bg-amber-500' }: CostRowProps)
 export function ResultsPanel() {
   const { inputs } = useCalculatorStore();
   const results = useMemo(() => calculate(inputs), [inputs]);
+  const toast = useToastStore();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [productName, setProductName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleAddProduct = async () => {
+    if (!productName.trim()) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: productName.trim(),
+          description: null,
+          filamentId: null,
+          pricePerGram: inputs.pricePerGram,
+          gramsUsed: inputs.gramsUsed,
+          printHours: inputs.printHours,
+          electricityRateKwh: inputs.electricityRateKwh,
+          printerWatts: inputs.printerWatts,
+          machineHourlyRate: inputs.machineHourlyRate,
+          wasteFactorPercent: inputs.wasteFactorPercent,
+          sellingPrice: inputs.sellingPrice,
+          overheadCost: 0,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to create product');
+
+      toast.success('Product created successfully');
+      setDialogOpen(false);
+      setProductName('');
+    } catch {
+      toast.error('Failed to create product. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const { materialCost, electricityCost, machineCost, totalCost, actualMarginPercent, profit } = results;
   const isGoodMargin = actualMarginPercent >= 30;
@@ -79,6 +125,16 @@ export function ResultsPanel() {
         </span>
       </div>
 
+      {/* Add Product Button */}
+      <Button
+        variant="outline"
+        onClick={() => setDialogOpen(true)}
+        className="w-full flex items-center justify-center gap-2 h-9 bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
+      >
+        <Plus className="w-4 h-4" />
+        Add as Product
+      </Button>
+
       {/* Cost breakdown */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">Cost Breakdown</p>
@@ -116,6 +172,68 @@ export function ResultsPanel() {
           </div>
         ))}
       </div>
+
+      {/* Add Product Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-sm mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add New Product</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-zinc-400">Product Name *</Label>
+              <Input
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="e.g. Phone Stand"
+                className="bg-zinc-800 border-white/10 text-white h-10 md:h-8"
+                autoFocus
+              />
+            </div>
+
+            {/* Preview of values that will be saved */}
+            <div className="p-3 bg-zinc-800/50 border border-white/10 rounded-lg space-y-1.5">
+              <p className="text-xs text-zinc-500 mb-2">Will be saved with:</p>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Grams</span>
+                <span className="text-zinc-200">{inputs.gramsUsed}g</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Print time</span>
+                <span className="text-zinc-200">{inputs.printHours} hr</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Selling price</span>
+                <span className="text-zinc-200">
+                  {inputs.sellingPrice > 0 ? formatIDR(inputs.sellingPrice) : '-'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Total cost</span>
+                <span className="text-amber-400">{formatIDR(totalCost)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                className="flex-1 border-white/10 text-zinc-400 hover:text-white h-10 md:h-8"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddProduct}
+                disabled={!productName.trim() || saving}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold h-10 md:h-8"
+              >
+                {saving ? 'Saving...' : 'Add Product'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

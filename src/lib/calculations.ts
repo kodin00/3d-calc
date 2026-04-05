@@ -47,3 +47,13 @@ export function getMultiplierPrices(totalCost: number): { x3: number; x4: number
     x5: Math.round(totalCost * 5),
   };
 }
+
+/**
+ * Calculate print hours based on grams used.
+ * 20g = 1 hour minimum, anything over multiples of 20g adds an hour.
+ * <=20g = 1 hour, 21-40g = 2 hours, etc.
+ */
+export function calculatePrintHours(gramsUsed: number): number {
+  if (gramsUsed <= 0) return 0;
+  return Math.ceil(gramsUsed / 20);
+}

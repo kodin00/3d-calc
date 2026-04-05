@@ -5,7 +5,7 @@ export const DEFAULTS = {
   pricePerGram: 200,             // IDR per gram
   printerWatts: 120,             // 120W power draw
   sellingPrice: 0,
-  gramsUsed: 100,
+  gramsUsed: 20,
   printHours: 4,
 };
 
